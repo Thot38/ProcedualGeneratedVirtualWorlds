@@ -48,7 +48,7 @@ public class SimpleMeshDebuggerEditor : Editor
         if (shouldShowTriangelVertexIndices)
             ShowTriangleVertexIndices();
         if (shouldShowTriangelNormals)
-            ShowTriangleNormals();
+            ShowTriangleNormals();  
     }
 
     private void ShowTriangleNormals()
