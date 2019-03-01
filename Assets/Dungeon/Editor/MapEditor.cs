@@ -21,6 +21,18 @@ public class RoomEditor : Editor
         {
             mapGenerator.GenerateMap();
         }
+        if (GUILayout.Button("Generate Quazy Shit"))
+        {
+            mapGenerator.GenerateCrazyShit(1);
+        }
+        if (GUILayout.Button("Smooth"))
+        {
+            mapGenerator.SmoothMap(new System.Random());
+        }
+        if (GUILayout.Button("Mesh"))
+        {
+            mapGenerator.CreateMesh();
+        }
 
         if (EditorGUI.EndChangeCheck())
         { 
