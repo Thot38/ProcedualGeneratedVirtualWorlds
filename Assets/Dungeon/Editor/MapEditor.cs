@@ -25,9 +25,17 @@ public class RoomEditor : Editor
         {
             mapGenerator.GenerateCrazyShit(1);
         }
+        if (GUILayout.Button("Generate 2Disch Map"))
+        {
+            mapGenerator.GenerateMapV2();
+        }
         if (GUILayout.Button("Smooth"))
         {
             mapGenerator.SmoothMap(new System.Random());
+        }
+        if (GUILayout.Button("Fill"))
+        {
+            mapGenerator.FillMap();
         }
         if (GUILayout.Button("Mesh"))
         {

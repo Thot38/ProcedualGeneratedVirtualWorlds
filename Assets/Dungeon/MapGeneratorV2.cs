@@ -5,8 +5,10 @@ using System;
 
 public class MapGeneratorV2 : MonoBehaviour
 {
-    public int width = 32;
-    public int height = 32;
+    public OpenSimplexNoise openSimplexNoise;
+
+    public int width = 64;
+    public int height = 64;
     public int depth = 32;
     public int numberOfSmoothings = 5;
     public float landMasses = 0.47f;
@@ -19,6 +21,9 @@ public class MapGeneratorV2 : MonoBehaviour
 
     [Range(0f, 26f)]
     public int numberOfAdjacent = 12;
+
+    [Range(0f, 8f)]
+    public int numberOfAdjacentIn2D = 4;
     [Range(0f, 5f)]
     public int variance = 1;
     [Range(-1f, 1f)]
@@ -26,10 +31,13 @@ public class MapGeneratorV2 : MonoBehaviour
     [Range(0f, 8f)]
     public int seedSize = 0;
 
+    public float increment = 0.07f;
+
     float[,,] map;
 
     public bool useRandomSeed = true;
     public string seed;
+    private System.Random Random;
 
     public void Init()
     {
@@ -37,7 +45,92 @@ public class MapGeneratorV2 : MonoBehaviour
 
         if (useRandomSeed)
             seed = DateTime.Now.ToString();
+        openSimplexNoise = new OpenSimplexNoise(seed.GetHashCode());
+        Random = new System.Random(seed.GetHashCode());
 
+    }
+
+    public void FillMap()
+    {
+        Init();
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                for (int z = 0; z < depth; z++)
+                {
+                    //map[x, y, z] = Mathf.PerlinNoise(y / 15f, Mathf.Clamp(Mathf.PerlinNoise(x / 2f, z / 2f), 0, width) / 2f);
+                    //map[x, y, z] = Mathf.PerlinNoise(x / 2f, y / 2f);
+                    var randomNoisiator = Random.Next(-3, 3) * increment;
+                    var n = (float)openSimplexNoise.eval(x * increment, y * increment, z * increment, randomNoisiator) * 255;
+                    map[x, y, z] = Utils.Remap(n, -1, 1, 0, 100);
+                }
+            }
+        }
+        BuildABorderWall();
+    }
+
+    public void GenerateMapV2()
+    {
+        Init();
+
+        FillMap(Random);
+
+        for (int i = 0; i < 5; i++)
+        {
+            SmoothMap2D();
+        }
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                for (int z = 0; z < depth; z++)
+                {
+
+                }
+            }
+        }
+    }
+
+    public void SmoothMap2D()
+    {
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                for (int z = 0; z < depth; z++)
+                {
+                    if (NumberOfAdjacents2D(new Vector3Int(x, y, 0)) > numberOfAdjacentIn2D)
+                        map[x, y, z] = 1;
+                    else if (NumberOfAdjacents2D(new Vector3Int(x, y, 0)) < numberOfAdjacentIn2D)
+                        map[x, y, z] = 0;
+                }
+            }
+        }
+    }
+
+    private int NumberOfAdjacents2D(Vector3Int point)
+    {
+        var result = 0;
+        for (int x = point.x - 1; x <= point.x + 1; x++)
+        {
+            for (int y = point.y - 1; y <= point.y + 1; y++)
+            {
+                if (x >= 0 && x < width && y >= 0 && y < height)
+                {
+                    if (x != point.x || y != point.y)
+                    {
+                        result += (int)map[x, y, point.z];
+                    }
+                }
+                else
+                {
+                    result++;
+                }
+            }
+        }
+        return result;
     }
 
     public void GenerateCrazyShit(int rule)
@@ -79,11 +172,8 @@ public class MapGeneratorV2 : MonoBehaviour
         }
     }
 
-    public void GenerateMap()
+    public void FillMap(System.Random pseudoRandomGenerator)
     {
-        Init();
-
-        var pseudoRandomGenerator = new System.Random(seed.GetHashCode());
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
@@ -98,6 +188,14 @@ public class MapGeneratorV2 : MonoBehaviour
                 }
             }
         }
+    }
+
+    public void GenerateMap()
+    {
+        Init();
+
+        var pseudoRandomGenerator = new System.Random(seed.GetHashCode());
+        FillMap(pseudoRandomGenerator);
 
         for (int i = 0; i < numberOfSmoothings; i++)
         {
@@ -124,7 +222,9 @@ public class MapGeneratorV2 : MonoBehaviour
     {
         if (material == null)
         {
-            material = new Material(Shader.Find("Standard"));
+            var shader = Shader.Find("Custom/StandardVertex");
+            material = new Material(shader);
+            material.SetColor("_Color", new Color(0.4622642f, 0.2678384f, 0.1940637f, 1));
         }
 
         marching.Surface = surface;
@@ -172,8 +272,8 @@ public class MapGeneratorV2 : MonoBehaviour
 
             // go.transform.localPosition = new Vector3(-width / 2, -height / 2, -depth / 2);
             var illuminationDevice = gameObject.AddComponent<Light>();
-            illuminationDevice.color = new Color(160, 82, 45);
-            illuminationDevice.transform.position = gameObject.transform.TransformPoint(new Vector3(-width / 2, -height / 2, -depth / 2));
+            //illuminationDevice.color = new Color(160, 82, 45);
+            //illuminationDevice.transform.position = gameObject.transform.TransformPoint(new Vector3(-width / 2, -height / 2, -depth / 2));
         }
     }
 
@@ -204,10 +304,24 @@ public class MapGeneratorV2 : MonoBehaviour
                 {
                     if (NumberOfAdjacents(new Vector3Int(x, y, z)) > numberOfAdjacent + random.Next(-variance, variance))
                         map[x, y, z] = 1;
-                    else if (NumberOfAdjacents(new Vector3Int(x, y, z)) > 5 && NumberOfAdjacents(new Vector3Int(x, y, z)) < 8)
+
+                }
+            }
+        }
+    }
+
+    private void BuildABorderWall()
+    {
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                for (int z = 0; z < depth; z++)
+                {
+                    if ((x == 1 || x == width - 2) || (y == 1 || y == height - 2) || (z == 1 || z == depth - 2))
+                        map[x, y, z] = (float)openSimplexNoise.eval((x + z) * increment, (y + z) * increment, Random.NextDouble() * increment);
+                    if ((x == 0 || x == width - 1) || (y == 0 || y == height - 1) || (z == 0 || z == depth - 1))
                         map[x, y, z] = 1;
-                    else if (NumberOfAdjacents(new Vector3Int(x, y, z)) < numberOfAdjacent + random.Next(-variance, variance))
-                        map[x, y, z] = 0;
                 }
             }
         }
@@ -253,7 +367,7 @@ public class MapGeneratorV2 : MonoBehaviour
             {
                 for (int z = 0; z < depth; z++)
                 {
-                    if (map[x, y, z] > 0)
+                    if (map[x, y, z] > surface)
                     {
                         Gizmos.color = PickColor(map[x, y, z]);
                         var posTransformed = gameObject.transform.TransformPoint(new Vector3(x, y, z));
@@ -275,5 +389,5 @@ public class MapGeneratorV2 : MonoBehaviour
             case 3: return Color.blue;
             default: return Color.cyan;
         }
-    } 
+    }
 }
