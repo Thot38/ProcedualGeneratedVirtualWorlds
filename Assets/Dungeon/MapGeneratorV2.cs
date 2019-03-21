@@ -61,9 +61,11 @@ public class MapGeneratorV2 : MonoBehaviour
                 {
                     //map[x, y, z] = Mathf.PerlinNoise(y / 15f, Mathf.Clamp(Mathf.PerlinNoise(x / 2f, z / 2f), 0, width) / 2f);
                     //map[x, y, z] = Mathf.PerlinNoise(x / 2f, y / 2f);
-                    var randomNoisiator = Random.Next(-3, 3) * increment;
-                    var n = (float)openSimplexNoise.eval(x * increment, y * increment, z * increment, randomNoisiator) * 255;
-                    map[x, y, z] = Utils.Remap(n, -1, 1, 0, 100);
+                    var randomNoisiator = Random.NextDouble() * increment * 2;
+                    //var n = (float)openSimplexNoise.eval(x * increment, y * increment, z * increment, randomNoisiator) * 255;
+                    //map[x, y, z] = Utils.Remap(n, -1, 1, 0, 100);
+                    var n = (float)openSimplexNoise.eval(x * increment, y * increment, z * increment, randomNoisiator);
+                    map[x, y, z] = n > 0 ? n : 0;
                 }
             }
         }

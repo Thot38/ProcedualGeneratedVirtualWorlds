@@ -49,7 +49,6 @@ public class RoomEditor : Editor
         DrawDefaultInspector();
     }
 
-    [MenuItem("GameObject/Cavern")]
     public static MapGeneratorV2 CreateTriangleCoords()
     {
         var go = new GameObject("Cave");
